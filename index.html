@@ -2,27 +2,98 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iightshot - Công cụ chia sẻ ảnh nhanh</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Block Blast - Vô Cực</title>
     <style>
-        /* --- CSS: Giao diện (Màu tối, giống iightshot) --- */
+        :root {
+            --bg-color: #1a1a2e;
+            --grid-bg: #16213e;
+            --cell-bg: #0f3460;
+            --text-color: #e94560;
+            --accent-color: #3498db; /* Màu xanh dương trong hình ảnh cung cấp */
+        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: white;
             margin: 0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            height: 100vh;
+            justify-content: center;
+            min-height: 100vh;
             overflow: hidden;
+            touch-action: none;
         }
 
-        #drop-zone {
-            width: 80%;
-            max-width: 600px;
-            height: 300px;
-            border: 2px dashed #444;
+        /* Các màn hình */
+        .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; padding: 20px; box-sizing: border-box;}
+        .active { display: flex; }
+
+        h1 { color: var(--text-color); font-size: 2.5rem; text-shadow: 0 0 10px rgba(233, 69, 96, 0.5); }
+        
+        input { padding: 12px; font-size: 1.2rem; border-radius: 8px; border: none; margin-bottom: 20px; width: 80%; text-align: center; }
+        button { background-color: var(--text-color); color: white; border: none; padding: 15px 30px; font-size: 1.2rem; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover { transform: scale(1.05); }
+
+        /* Màn hình Game */
+        #header-game { width: 100%; display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 1.2rem; font-weight: bold;}
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            background-color: var(--grid-bg);
+            padding: 5px;
+            border-radius: 8px;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+        }
+        .cell {
+            background-color: var(--cell-bg);
+            border-radius: 4px;
+            transition: 0.1s;
+        }
+        
+        /* Lớp filled được định nghĩa lại để hỗ trợ hình ảnh được tải lên */
+        .filled {
+            background-color: #4facfe; /* Màu mặc định */
+            background-image: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Khay chứa khối bên dưới */
+        #tray {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            height: 120px;
+            margin-top: 30px;
+        }
+        .shape-container {
+            display: grid;
+            gap: 2px;
+            align-content: center;
+            justify-content: center;
+        }
+        .shape-block {
+            width: 25px; height: 25px;
+            background-color: #e94560;
+            border-radius: 3px;
+        }
+        
+        /* Bảng xếp hạng */
+        #leaderboard-list { list-style: none; padding: 0; width: 100%; }
+        #leaderboard-list li { background: var(--grid-bg); margin: 5px 0; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; }
+
+        /* CSS MỚI: Vùng Tải lên Hình ảnh (giống hình ảnh cung cấp) */
+        #image-upload-zone {
+            width: 90%;
+            max-width: 380px;
+            height: 160px; /* Chiều cao gọn hơn để phù hợp với màn hình đăng nhập */
+            border: 2px dashed #444; /* Viền đứt đoạn tối */
             border-radius: 12px;
             display: flex;
             flex-direction: column;
@@ -31,36 +102,35 @@
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
-            background-color: #1a1a1a;
-            padding: 20px;
+            background-color: #16213e; /* Nền tối của grid */
+            padding: 15px;
             text-align: center;
+            margin-bottom: 20px;
         }
 
-        #drop-zone.hover {
-            border-color: #3498db;
-            background-color: #222;
+        #image-upload-zone.hover {
+            border-color: var(--accent-color); /* Đổi màu viền khi hover */
+            background-color: var(--cell-bg);
         }
 
-        #drop-zone p {
-            font-size: 1.2rem;
-            margin: 0 0 15px 0;
+        #image-upload-zone p {
+            font-size: 1rem;
+            margin: 5px 0;
             color: #aaa;
         }
 
-        #drop-zone .icon {
-            font-size: 4rem;
-            margin-bottom: 10px;
+        #image-upload-zone .icon {
+            font-size: 3rem; /* Biểu tượng máy ảnh */
             color: #555;
         }
 
-        /* Nút chọn ảnh */
         .browse-btn {
-            background-color: #3498db;
+            background-color: var(--accent-color); /* Màu xanh dương trong hình ảnh cung cấp */
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 6px;
-            font-size: 1rem;
+            font-size: 0.9rem;
             cursor: pointer;
             transition: background 0.2s;
         }
@@ -68,77 +138,279 @@
         .browse-btn:hover {
             background-color: #2980b9;
         }
-
-        /* Vùng hiển thị ảnh sau khi chọn */
-        #preview-container {
-            display: none; /* Ẩn lúc đầu */
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-
-        #preview-image {
-            max-width: 90%;
-            max-height: 80%;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-
-        #close-preview {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            color: white;
-            font-size: 2rem;
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        #url-display {
-            position: absolute;
-            bottom: 30px;
-            color: white;
-            background: rgba(0,0,0,0.5);
-            padding: 10px 20px;
-            border-radius: 8px;
-        }
     </style>
 </head>
 <body>
 
-    <!-- --- HTML: Cấu trúc trang --- -->
-    <div id="drop-zone">
-        <div class="icon">📷</div>
-        <p>Kéo & Thả ảnh vào đây</p>
-        <p>hoặc</p>
-        <button class="browse-btn" onclick="document.getElementById('file-input').click()">Chọn ảnh</button>
-        <input type="file" id="file-input" accept="image/*" style="display: none;">
+    <!-- Màn hình Đăng nhập (tích hợp vùng upload) active lúc đầu -->
+    <div id="start-screen" class="screen active">
+        <h1>BLOCK BLAST</h1>
+
+        <!-- VÙNG TẢI LÊN HÌNH ẢNH MỚI (nằm trên input tên) -->
+        <div id="image-upload-zone">
+            <div class="icon">📷</div> <!-- emoji máy ảnh -->
+            <p>Kéo & Thả ảnh vào đây</p>
+            <p>hoặc</p>
+            <button class="browse-btn" onclick="document.getElementById('image-file-input').click()">Chọn ảnh</button>
+            <input type="file" id="image-file-input" accept="image/*" style="display: none;">
+        </div>
+
+        <input type="text" id="player-name" placeholder="Nhập tên của bạn" maxlength="15">
+        <button onclick="startGame()">Bắt Đầu Chơi</button>
     </div>
 
-    <!-- Vùng xem trước ảnh (giống trang iightshot) -->
-    <div id="preview-container">
-        <span id="close-preview">&times;</span>
-        <img id="preview-image" src="" alt="Xem trước ảnh">
-        <div id="url-display">Ảnh đã được nhận!</div>
+    <!-- Màn hình Game -->
+    <div id="game-screen" class="screen">
+        <div id="header-game">
+            <span id="display-name">Player</span>
+            <span>Điểm: <span id="score">0</span></span>
+        </div>
+        <div class="grid" id="board"></div>
+        <div id="tray"></div>
     </div>
 
-    <!-- --- JavaScript: Xử lý logic --- -->
+    <!-- Màn hình Game Over -->
+    <div id="game-over-screen" class="screen">
+        <h1>GAME OVER!</h1>
+        <h2>Điểm của bạn: <span id="final-score">0</span></h2>
+        <button onclick="location.reload()">Chơi Lại</button>
+        <h3>BẢNG XẾP HẠNG</h3>
+        <ul id="leaderboard-list"></ul>
+    </div>
+
     <script>
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const previewContainer = document.getElementById('preview-container');
-        const previewImage = document.getElementById('preview-image');
-        const closePreview = document.getElementById('close-preview');
+        const boardElement = document.getElementById('board');
+        const trayElement = document.getElementById('tray');
+        const scoreElement = document.getElementById('score');
+        
+        // Thêm các biến mới cho vùng upload
+        const imageUploadZone = document.getElementById('image-upload-zone');
+        const imageFileInput = document.getElementById('image-file-input');
+        
+        let board = Array.from({ length: 8 }, () => Array(8).fill(0));
+        let score = 0;
+        let playerName = "";
+        let selectedShape = null;
+        let blockImageUrl = null; // Biến lưu URL hình ảnh được tải lên
 
-        // 1. Ngăn chặn hành vi mặc định của trình duyệt (để kéo thả hoạt động)
+        // Các hình dạng khối (1: có gạch, 0: trống)
+        const shapes = [
+            [[1]], // 1x1
+            [[1,1],[1,1]], // 2x2 vuông
+            [[1,1,1]], // 3x1 ngang
+            [[1],[1],[1]], // 1x3 dọc
+            [[1,0],[1,1]], // Chữ L nhỏ
+            [[1,1,1],[1,1,1],[1,1,1]], // 3x3 vuông
+            [[1,1,1,1]] // 4x1 ngang
+        ];
+
+        // Khởi tạo bàn cờ HTML
+        function initBoard() {
+            boardElement.innerHTML = '';
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    
+                    // Xử lý khi click vào ô cờ để đặt khối
+                    cell.addEventListener('click', () => placeShape(r, c));
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        // Tạo 3 khối ngẫu nhiên
+        function spawnShapes() {
+            trayElement.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const shapeIndex = Math.floor(Math.random() * shapes.length);
+                const shapeData = shapes[shapeIndex];
+                
+                const shapeDiv = document.createElement('div');
+                shapeDiv.classList.add('shape-container');
+                shapeDiv.style.gridTemplateColumns = `repeat(${shapeData[0].length}, 25px)`;
+                
+                shapeData.forEach(row => {
+                    row.forEach(val => {
+                        const block = document.createElement('div');
+                        if (val === 1) block.classList.add('shape-block');
+                        shapeDiv.appendChild(block);
+                    });
+                });
+
+                // Chọn khối để đặt
+                shapeDiv.addEventListener('click', () => {
+                    document.querySelectorAll('.shape-container').forEach(el => el.style.opacity = '1');
+                    shapeDiv.style.opacity = '0.5'; // Làm mờ khối đang chọn
+                    selectedShape = { data: shapeData, element: shapeDiv };
+                });
+
+                trayElement.appendChild(shapeDiv);
+            }
+        }
+
+        // Đặt khối xuống bàn cờ
+        function placeShape(startRow, startCol) {
+            if (!selectedShape) return;
+            
+            const shape = selectedShape.data;
+            let canPlace = true;
+
+            // Kiểm tra xem có đủ chỗ không
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[0].length; c++) {
+                    if (shape[r][c] === 1) {
+                        let targetRow = startRow + r;
+                        let targetCol = startCol + c;
+                        if (targetRow >= 8 || targetCol >= 8 || board[targetRow][targetCol] === 1) {
+                            canPlace = false;
+                        }
+                    }
+                }
+            }
+
+            if (canPlace) {
+                // Tô màu các ô
+                for (let r = 0; r < shape.length; r++) {
+                    for (let c = 0; c < shape[0].length; c++) {
+                        if (shape[r][c] === 1) {
+                            board[startRow + r][startCol + c] = 1;
+                        }
+                    }
+                }
+                
+                selectedShape.element.remove(); // Xóa khối khỏi khay
+                selectedShape = null;
+                score += 10;
+                
+                updateBoardVisual();
+                checkLines();
+
+                // Nếu khay trống, tạo 3 khối mới
+                if (trayElement.children.length === 0) spawnShapes();
+
+                // Kiểm tra thua cuộc
+                setTimeout(checkGameOver, 100);
+            }
+        }
+
+        // Xóa hàng/cột nếu đầy
+        function checkLines() {
+            let rowsToClear = [];
+            let colsToClear = [];
+
+            for (let r = 0; r < 8; r++) {
+                if (board[r].every(val => val === 1)) rowsToClear.push(r);
+            }
+            for (let c = 0; c < 8; c++) {
+                if (board.every(row => row[c] === 1)) colsToClear.push(c);
+            }
+
+            rowsToClear.forEach(r => board[r].fill(0));
+            colsToClear.forEach(c => {
+                for (let r = 0; r < 8; r++) board[r][c] = 0;
+            });
+
+            const totalCleared = rowsToClear.length + colsToClear.length;
+            if (totalCleared > 0) {
+                score += totalCleared * 100;
+                updateBoardVisual();
+            }
+            scoreElement.innerText = score;
+        }
+
+        // Cập nhật giao diện bàn cờ (sử dụng .filled được định nghĩa CSS)
+        function updateBoardVisual() {
+            const cells = boardElement.children;
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const idx = r * 8 + c;
+                    if (board[r][c] === 1) cells[idx].classList.add('filled');
+                    else cells[idx].classList.remove('filled');
+                }
+            }
+        }
+
+        // Game Over (Logic cơ bản)
+        function checkGameOver() {
+            // (Thua khi không còn nước đi hợp lệ nào)
+        }
+
+        function endGame() {
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('game-over-screen').classList.add('active');
+            document.getElementById('final-score').innerText = score;
+            saveScore();
+            loadLeaderboard();
+        }
+
+        function saveScore() {
+            let lb = JSON.parse(localStorage.getItem('blockblastLB')) || [];
+            lb.push({ name: playerName, score: score });
+            lb.sort((a, b) => b.score - a.score); // Xếp cao xuống thấp
+            lb = lb.slice(0, 5); // Lấy top 5
+            localStorage.setItem('blockblastLB', JSON.stringify(lb));
+        }
+
+        function loadLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
+            let lb = JSON.parse(localStorage.getItem('blockblastLB')) || [];
+            lb.forEach((item, index) => {
+                list.innerHTML += `<li><span>#${index + 1} ${item.name}</span> <span>${item.score} đ</span></li>`;
+            });
+        }
+
+        // CẬP NHẬT startGame(): Cập nhật kiểu dáng khối trước khi chơi
+        function startGame() {
+            const nameInput = document.getElementById('player-name').value;
+            if (nameInput.trim() === "") { alert("Vui lòng nhập tên!"); return; }
+            playerName = nameInput;
+            document.getElementById('display-name').innerText = playerName;
+
+            // Nếu có hình ảnh được tải lên, chèn kiểu dáng CSS động để thay thế màu mặc định
+            if (blockImageUrl) {
+                let style = document.createElement('style');
+                style.innerHTML = `
+                    .filled {
+                        background-color: transparent !important;
+                        background-image: url('${blockImageUrl}') !important;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            document.getElementById('start-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            
+            initBoard();
+            spawnShapes();
+        }
+
+        // LOGIC TẢI LÊN HÌNH ẢNH MỚI
+        function handleImageFiles(files) {
+            if (files.length > 0) {
+                let file = files[0];
+                // Kiểm tra xem có phải là ảnh không
+                if (!file.type.startsWith('image/')) {
+                    alert('Vui lòng chỉ chọn file ảnh!');
+                    return;
+                }
+                // Đọc file ảnh bằng FileReader
+                let reader = new FileReader();
+                reader.readAsDataURL(file); // Đọc file dưới dạng URL
+                reader.onloadend = function() {
+                    blockImageUrl = reader.result; // Lưu ảnh dạng base64
+                    alert('Hình ảnh đã được tải lên thành công! Hãy nhập tên và bấm Bắt Đầu Chơi.');
+                }
+            }
+        }
+
+        // Sự kiện drop-zone (ngăn chặn hành vi mặc định và thêm hiệu ứng)
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
+            imageUploadZone.addEventListener(eventName, preventDefaults, false);
             document.body.addEventListener(eventName, preventDefaults, false);
         });
 
@@ -147,70 +419,20 @@
             e.stopPropagation();
         }
 
-        // 2. Hiệu ứng khi kéo file vào vùng drop
         ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
+            imageUploadZone.addEventListener(eventName, () => imageUploadZone.classList.add('hover'), false);
         });
 
         ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
+            imageUploadZone.addEventListener(eventName, () => imageUploadZone.classList.remove('hover'), false);
         });
 
-        function highlight(e) {
-            dropZone.classList.add('hover');
-        }
+        imageUploadZone.addEventListener('drop', (e) => {
+            handleImageFiles(e.dataTransfer.files);
+        }, false);
 
-        function unhighlight(e) {
-            dropZone.classList.remove('hover');
-        }
-
-        // 3. Xử lý khi thả file (Drop)
-        dropZone.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            let dt = e.dataTransfer;
-            let files = dt.files;
-            handleFiles(files);
-        }
-
-        // 4. Xử lý khi chọn file qua nút "Chọn ảnh"
-        fileInput.addEventListener('change', function() {
-            handleFiles(this.files);
-        });
-
-        // 5. Hàm xử lý file chính (Đọc và Hiển thị)
-        function handleFiles(files) {
-            if (files.length > 0) {
-                let file = files[0];
-
-                // Kiểm tra xem có phải là ảnh không
-                if (!file.type.startsWith('image/')) {
-                    alert('Vui lòng chỉ chọn file ảnh!');
-                    return;
-                }
-
-                // Đọc file ảnh bằng FileReader
-                let reader = new FileReader();
-                reader.readAsDataURL(file); // Đọc file dưới dạng URL
-
-                reader.onloadend = function() {
-                    // Đọc xong: Gán link ảnh vào thẻ img và hiển thị vùng xem trước
-                    previewImage.src = reader.result;
-                    previewContainer.style.display = 'flex';
-                }
-            }
-        }
-
-        // 6. Đóng vùng xem trước (giống trang iightshot khi click vào ảnh hoặc dấu X)
-        closePreview.addEventListener('click', () => {
-            previewContainer.style.display = 'none';
-        });
-
-        previewContainer.addEventListener('click', (e) => {
-            // Chỉ đóng khi click vào vùng nền hoặc ảnh, không phải các nút khác
-            if (e.target === previewContainer || e.target === previewImage) {
-                previewContainer.style.display = 'none';
-            }
+        imageFileInput.addEventListener('change', function() {
+            handleImageFiles(this.files);
         });
     </script>
 </body>
